@@ -1,10 +1,25 @@
 package boxes;
 
-import grid.Direction;
+import tools.SpecialTool;
 
+/**
+ * RegularBox:
+ * - Can be rolled
+ * - Can be stamped
+ * - May contain a SpecialTool
+ */
 public class RegularBox extends Box {
-    @Override
-    public void roll(Direction direction) {
 
+    public RegularBox(char[] surfaces, SpecialTool content) {
+        super(surfaces, content, false);
+    }
+
+    public RegularBox(RegularBox other) {
+        super(other);
+    }
+
+    @Override
+    protected char getTypeMarker() {
+        return 'R';
     }
 }
