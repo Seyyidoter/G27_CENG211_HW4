@@ -10,12 +10,12 @@ import java.util.Objects;
  * Base abstraction for all Boxes on the grid.
  * Design goals:
  * - Prevent privacy leaks: do NOT expose internal arrays directly.
- * - Support polymorphism: subclasses override behavior (FixedBox cannot roll, UnchangingBox cannot be stamped).
+ * - Support polymorphism: subclasses override behavior (FixedBox cannot roll, UnchangingBox stamping behavior differs).
  * - Keep state minimal and consistent.
  */
 public abstract class Box implements Rollable {
 
-    // Internal fixed mapping to indices (kept private/protected to avoid duplication bugs).
+    // Internal fixed mapping to indices.
     protected static final int IDX_TOP = 0;
     protected static final int IDX_BOTTOM = 1;
     protected static final int IDX_LEFT = 2;
@@ -23,16 +23,23 @@ public abstract class Box implements Rollable {
     protected static final int IDX_FRONT = 4; // towards DOWN direction
     protected static final int IDX_BACK = 5;  // towards UP direction
 
-    private final char[] surfaces;  // 6 letters, never leaked
+    private final char[] surfaces;  // length 6, never leaked
     private boolean opened;         // opened boxes become empty (O marker)
     private SpecialTool content;    // can be null if empty
 
     /**
-     * Main constructor: defensive-copies surfaces.
+     * Main constructor.
+     * Defensive-copies surfaces and normalizes letters to uppercase.
      */
     protected Box(char[] surfaces, SpecialTool content, boolean opened) {
         validateSurfaces(surfaces);
-        this.surfaces = Arrays.copyOf(surfaces, surfaces.length); // defensive copy => no privacy leak
+
+        // Defensive copy + normalize to uppercase (A..H)
+        this.surfaces = Arrays.copyOf(surfaces, surfaces.length);
+        for (int i = 0; i < this.surfaces.length; i++) {
+            this.surfaces[i] = Character.toUpperCase(this.surfaces[i]);
+        }
+
         this.content = content;
         this.opened = opened;
     }
@@ -41,7 +48,7 @@ public abstract class Box implements Rollable {
      * Copy constructor:
      * - Deep copy surfaces array
      * - Copy simple fields
-     * - content reference is copied as-is (tool objects are managed by game logic)
+     * - Copy content reference as-is (tools are managed by game logic)
      */
     protected Box(Box other) {
         Objects.requireNonNull(other, "other box is null");
@@ -80,10 +87,8 @@ public abstract class Box implements Rollable {
 
     /**
      * Opens the box and returns the tool (if any).
-     * After opening, the box becomes empty and should be marked as 'O'.
-     * Note: EmptyBoxException is thrown by upper-level menu/game logic
-     * when this method returns null, because this class should stay
-     * reusable and simple.
+     * After opening, the box becomes empty and its lid is closed,
+     * so its top-side letter remains unchanged.
      */
     public final SpecialTool openAndTakeContent() {
         opened = true;
@@ -94,7 +99,6 @@ public abstract class Box implements Rollable {
 
     /**
      * Sets content (typically during grid generation).
-     * Keep it simple; game logic is responsible for probabilities/rules.
      */
     public final void setContent(SpecialTool tool) {
         this.content = tool;
@@ -106,16 +110,20 @@ public abstract class Box implements Rollable {
 
     /**
      * Generic stamping API used by SpecialTools.
-     * Default behavior: stamps the given face.
-     * UnchangingBox must override and ignore stamping on ALL faces.
+     * Default behavior: stamps the given face to the given letter.
+     *
+     * IMPORTANT:
+     * - The "no more than 2 of the same letter per box" rule is ONLY for initial generation.
+     *   After the game starts, re-stamping is allowed freely. (So we do NOT enforce that rule here.)
      */
     public void stamp(Face face, char letter) {
         Objects.requireNonNull(face, "face is null");
 
-        // Letter validation: allowed stamped letters are A..H (case-insensitive)
         char L = Character.toUpperCase(letter);
         if (L < 'A' || L > 'H') {
-            throw new IllegalArgumentException("Invalid stamped letter: " + letter + ". Allowed letters are A..H.");
+            throw new IllegalArgumentException(
+                    "Invalid stamped letter: " + letter + ". Allowed letters are A..H."
+            );
         }
 
         surfaces[toIndex(face)] = L;
@@ -124,16 +132,14 @@ public abstract class Box implements Rollable {
     /**
      * Convenience method: stamp only TOP.
      */
-    public void stampTop(char letter) {
+    public final void stampTop(char letter) {
         stamp(Face.TOP, letter);
     }
 
     /**
      * Tool support: flip the box upside down (swap TOP and BOTTOM).
-     * FixedBox override: should not be flippable in game logic (exception thrown above),
-     * but keeping this method is convenient for tests / tool implementation.
      */
-    public void flipUpsideDown() {
+    public final void flipUpsideDown() {
         swap(IDX_TOP, IDX_BOTTOM);
     }
 
@@ -149,7 +155,6 @@ public abstract class Box implements Rollable {
     public void roll(Direction direction) {
         Objects.requireNonNull(direction, "direction is null");
 
-        // Dice-like cycles (4-cycle) depending on direction.
         switch (direction) {
             case RIGHT -> cycle(IDX_TOP, IDX_LEFT, IDX_BOTTOM, IDX_RIGHT);
             case LEFT  -> cycle(IDX_TOP, IDX_RIGHT, IDX_BOTTOM, IDX_LEFT);
@@ -176,7 +181,7 @@ public abstract class Box implements Rollable {
     }
 
     /**
-     * Grid token format: | R-E-M | etc.
+     * Grid token format: | R-E-M |
      * O = opened/empty, M = mystery (not opened yet)
      */
     public final String gridToken() {
@@ -187,7 +192,7 @@ public abstract class Box implements Rollable {
 
     /**
      * Printable cube net view for "view all surfaces" option.
-     * The middle letter is the TOP face.
+     * The middle letter corresponds to the TOP face.
      */
     public final String toNetString() {
         StringBuilder sb = new StringBuilder();
@@ -216,6 +221,16 @@ public abstract class Box implements Rollable {
     private static void validateSurfaces(char[] s) {
         if (s == null || s.length != 6) {
             throw new IllegalArgumentException("surfaces must be a char[6]");
+        }
+
+        // Validate letters are within A..H (case-insensitive)
+        for (char ch : s) {
+            char up = Character.toUpperCase(ch);
+            if (up < 'A' || up > 'H') {
+                throw new IllegalArgumentException(
+                        "Invalid surface letter: " + ch + ". Allowed letters are A..H."
+                );
+            }
         }
     }
 

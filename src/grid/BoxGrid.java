@@ -2,6 +2,8 @@ package grid;
 
 import boxes.Box;
 import boxes.FixedBox;
+import boxes.RegularBox;
+import boxes.UnchangingBox;
 import exceptions.UnmovableFixedBoxException;
 
 import java.util.ArrayList;
@@ -21,8 +23,8 @@ public class BoxGrid {
 
     public static final int SIZE = 8;
 
-    private final List<List<Box>> grid;     // 8x8, never exposed
-    private final Set<Position> movedThisTurn; // boxes rolled in the first stage (used for "open" validation)
+    private final List<List<Box>> grid;         // 8x8, never exposed
+    private final Set<Position> movedThisTurn;  // boxes rolled in the first stage (used for "open" validation)
 
     public BoxGrid() {
         this.grid = new ArrayList<>(SIZE);
@@ -37,16 +39,29 @@ public class BoxGrid {
     }
 
     /**
-     * Copy constructor (mostly for rubric/tests).
-     * Note: Boxes are mutable; this is a shallow copy of Box references.
+     * Copy constructor (for rubric/tests).
+     * Deep copy:
+     * - Creates a new 8x8 structure
+     * - Copies each Box via its subclass copy constructor
+     * - Copies movedThisTurn positions defensively
      */
     public BoxGrid(BoxGrid other) {
         Objects.requireNonNull(other, "other grid is null");
+
         this.grid = new ArrayList<>(SIZE);
         for (int r = 0; r < SIZE; r++) {
-            this.grid.add(new ArrayList<>(other.grid.get(r)));
+            List<Box> newRow = new ArrayList<>(SIZE);
+            for (int c = 0; c < SIZE; c++) {
+                Box original = other.grid.get(r).get(c);
+                newRow.add(copyBox(original));
+            }
+            this.grid.add(newRow);
         }
-        this.movedThisTurn = new HashSet<>(other.movedThisTurn);
+
+        this.movedThisTurn = new HashSet<>();
+        for (Position p : other.movedThisTurn) {
+            this.movedThisTurn.add(new Position(p)); // defensive copy (Position is immutable anyway)
+        }
     }
 
     // -------------------------
@@ -103,9 +118,8 @@ public class BoxGrid {
             }
 
             b.roll(inwardDir);
-            movedThisTurn.add(new Position(cur)); // store copy (Position is immutable anyway)
+            movedThisTurn.add(new Position(cur)); // store copy
 
-            // Move inward; if out of bounds, finish.
             cur = tryMove(cur, inwardDir);
             if (cur == null) break;
         }
@@ -177,5 +191,20 @@ public class BoxGrid {
         }
 
         return sb.toString();
+    }
+
+    // -------------------------
+    // Deep copy helper
+    // -------------------------
+
+    private static Box copyBox(Box b) {
+        if (b == null) return null;
+
+        if (b instanceof FixedBox fb) return new FixedBox(fb);
+        if (b instanceof RegularBox rb) return new RegularBox(rb);
+        if (b instanceof UnchangingBox ub) return new UnchangingBox(ub);
+
+        // If a new Box subclass is added in the future, fail loudly in tests
+        throw new IllegalStateException("Unknown Box type for deep copy: " + b.getClass().getName());
     }
 }

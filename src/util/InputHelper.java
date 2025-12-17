@@ -1,23 +1,37 @@
 package util;
 
 import grid.Position;
+
 import java.util.Scanner;
 
 /**
  * Utility class for handling user inputs.
  * Uses Position.parse() to maintain consistency with the grid package.
  */
-public class InputHelper {
-    
+public final class InputHelper {
+
     // Single scanner instance for the application
-    private static final Scanner scanner = new Scanner(System.in);
+    private static final Scanner SCANNER = new Scanner(System.in);
+
+    private InputHelper() {
+        // utility class; prevent instantiation
+    }
 
     /**
-     * Reads a line of text from the user.
+     * Reads a non-empty line of text from the user.
      */
     public static String readString(String prompt) {
-        System.out.print(prompt);
-        return scanner.nextLine().trim();
+        while (true) {
+            System.out.print(prompt);
+            String line = SCANNER.nextLine();
+            if (line != null) {
+                String trimmed = line.trim();
+                if (!trimmed.isEmpty()) {
+                    return trimmed;
+                }
+            }
+            System.out.println("INCORRECT INPUT: Please enter a non-empty input.");
+        }
     }
 
     /**
@@ -27,16 +41,26 @@ public class InputHelper {
     public static int readInt(String prompt, int min, int max) {
         while (true) {
             System.out.print(prompt);
-            String input = scanner.nextLine().trim();
+            String input = SCANNER.nextLine();
+            if (input == null) {
+                System.out.println("INCORRECT INPUT: Please enter a valid number.");
+                continue;
+            }
+            input = input.trim();
+
+            if (input.isEmpty()) {
+                System.out.println("INCORRECT INPUT: Please enter a valid number.");
+                continue;
+            }
+
             try {
                 int value = Integer.parseInt(input);
                 if (value >= min && value <= max) {
                     return value;
-                } else {
-                    System.out.println("Invalid input. Please enter a number between " + min + " and " + max + ".");
                 }
+                System.out.println("INCORRECT INPUT: Please enter a number between " + min + " and " + max + ".");
             } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Please enter a valid number.");
+                System.out.println("INCORRECT INPUT: Please enter a valid number.");
             }
         }
     }
@@ -48,9 +72,19 @@ public class InputHelper {
     public static Position readPosition(String prompt) {
         while (true) {
             System.out.print(prompt);
-            String input = scanner.nextLine().trim();
+            String input = SCANNER.nextLine();
+            if (input == null) {
+                System.out.println("INCORRECT INPUT: Please enter a valid location (e.g., R1-C1).");
+                continue;
+            }
+            input = input.trim();
+
+            if (input.isEmpty()) {
+                System.out.println("INCORRECT INPUT: Please enter a valid location (e.g., R1-C1).");
+                continue;
+            }
+
             try {
-                //
                 return Position.parse(input);
             } catch (IllegalArgumentException e) {
                 System.out.println("INCORRECT INPUT: Please enter a valid location (e.g., R1-C1).");

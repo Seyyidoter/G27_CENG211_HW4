@@ -13,28 +13,30 @@ public class PlusShapeStamp extends SpecialTool {
 
     @Override
     public void use(BoxGrid grid, Position pos, char targetLetter) {
-        // We stamp the NEIGHBORS, not the center box itself.
-        
-        // Define the 4 cardinal directions
+        // PlusShapeStamp re-stamps 5 boxes:
+        // center (pos) + its 4 orthogonal neighbors (up/down/left/right).
+
+        // 1) Stamp center box
+        Box center = grid.getBox(pos);
+        if (center != null) {
+            center.stampTop(targetLetter);
+        }
+
+        // 2) Stamp 4 neighbors
         Direction[] dirs = {Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT};
 
-        // Iterate and stamp neighbors with the targetLetter
         for (Direction d : dirs) {
             try {
-                Position neighborPos = pos.move(d);
-                
-                if (neighborPos.inBounds()) {
-                    Box target = grid.getBox(neighborPos);
-                    if (target != null) {
-                        // Use the passed targetLetter
-                        target.stampTop(targetLetter);
-                    }
+                Position neighborPos = pos.move(d); // throws if out of bounds
+                Box neighbor = grid.getBox(neighborPos);
+                if (neighbor != null) {
+                    neighbor.stampTop(targetLetter);
                 }
             } catch (IllegalArgumentException e) {
-                // Hit the wall/boundary, ignore.
+                // Out of bounds => ignore this direction
             }
         }
-        
+
         System.out.println("Used PlusShapeStamp at " + pos + " with letter '" + targetLetter + "'");
     }
 }
