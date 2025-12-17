@@ -22,7 +22,7 @@ public class BoxPuzzle {
         // Randomly select target letter
         this.targetLetter = LETTERS[random.nextInt(LETTERS.length)];
         
-        // Populate the grid (since BoxGrid initializes with nulls)
+        // Populate the grid
         generateGrid();
     }
 
@@ -48,35 +48,28 @@ public class BoxPuzzle {
 
                 // Stage 1: Rolling
                 System.out.println("---> TURN " + turn + " FIRST STAGE:");
-                boolean rollSuccess = menu.handleRollingStage();
-                
-                // If rolling failed (e.g. FixedBox on edge), the exception is caught below 
-                // and the turn is wasted immediately.
+                menu.handleRollingStage();
                 
                 System.out.println("The new state of the box grid:");
                 System.out.println(boxGrid.toPrettyString());
 
                 // Stage 2: Opening & Tools
                 System.out.println("---> TURN " + turn + " SECOND STAGE:");
-                menu.handleToolStage(); // May throw EmptyBoxException or BoxAlreadyFixedException
+                menu.handleToolStage(); 
                 
                 System.out.println("The new state of the box grid:");
                 System.out.println(boxGrid.toPrettyString());
 
             } catch (UnmovableFixedBoxException e) {
-                // Turn is wasted
                 System.out.println(e.getMessage());
                 System.out.println("Turn is wasted!");
             } catch (EmptyBoxException e) {
-                // Turn is wasted
                 System.out.println("BOX IS EMPTY! " + e.getMessage());
                 System.out.println("Turn is wasted!");
             } catch (BoxAlreadyFixedException e) {
-                // Turn is wasted
                 System.out.println(e.getMessage());
                 System.out.println("Turn is wasted!");
             } catch (Exception e) {
-                // Generic handler to prevent crash
                 System.out.println("An unexpected error occurred: " + e.getMessage());
                 e.printStackTrace();
             }
@@ -106,7 +99,6 @@ public class BoxPuzzle {
         System.out.println(boxGrid.toPrettyString());
         System.out.println("THE TOTAL NUMBER OF TARGET LETTER \"" + targetLetter + "\"");
         System.out.println("IN THE BOX GRID --> " + count);
-        // Print SUCCESS message
         System.out.println("The game has been SUCCESSFULLY completed!");
     }
 
@@ -129,17 +121,14 @@ public class BoxPuzzle {
 
         // Probabilities: 85% Regular, 5% Fixed, 10% Unchanging (Implied remainder)
         if (roll < 0.85) {
-            // RegularBox
-            // 75% chance of tool
+            // RegularBox: 75% chance of tool
             SpecialTool tool = (random.nextDouble() < 0.75) ? generateRandomTool() : null;
             return new RegularBox(surfaces, tool);
-        } else if (roll < 0.90) { // 85% to 90% range covers the 5% for FixedBox
-            // FixedBox
-            // Never contains a tool
+        } else if (roll < 0.90) { 
+            // FixedBox (5%)
             return new FixedBox(surfaces);
         } else {
-            // UnchangingBox
-            // Guaranteed to contain a tool
+            // UnchangingBox (10%)
             return new UnchangingBox(surfaces, generateRandomTool());
         }
     }
@@ -164,17 +153,35 @@ public class BoxPuzzle {
         }
     }
 
+    /**
+     * Generates a random tool.
+     * The targetLetter is passed later via the use() method.
+     */
     private SpecialTool generateRandomTool() {
         // 5 Types of tools
         int pick = random.nextInt(5);
         return switch (pick) {
-            case 0 -> new PlusShapeStamp();
-            case 1 -> new MassRowStamp();
-            case 2 -> new MassColumnStamp();
-            case 3 -> new BoxFlipper();
-            case 4 -> new BoxFixer();
+            case 0 -> new PlusShapeStamp();   //
+            case 1 -> new MassRowStamp();     //
+            case 2 -> new MassColumnStamp();  //
+            case 3 -> new BoxFlipper();       //
+            case 4 -> new BoxFixer();         //
             default -> null; 
         };
+    }
+
+    // =============================================================
+    // GENERICS HELPER METHOD
+    // =============================================================
+
+    /**
+     * Applies the acquired tool to the grid.
+     */
+    private <T extends SpecialTool> void useAcquiredTool(T tool, BoxGrid grid, Position pos) throws Exception {
+        if (tool != null) {
+            // - use method now takes targetLetter
+            tool.use(grid, pos, this.targetLetter);
+        }
     }
 
     // =============================================================
@@ -248,8 +255,8 @@ public class BoxPuzzle {
                 // Must be used immediately
                 Position targetPos = InputHelper.readPosition("Please enter the location of the box to use this SpecialTool: ");
                 
-                // Call useTool directly on object
-                tool.use(boxGrid, targetPos);
+                // Use the Generic helper method to apply the tool
+                useAcquiredTool(tool, boxGrid, targetPos);
                 break;
             }
         }
