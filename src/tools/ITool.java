@@ -13,9 +13,11 @@ public interface ITool {
 
     /**
      * Applies the tool's effect to the specified position on the grid.
-     * @param grid The game grid.
+     * * @param grid The game grid.
      * @param pos The target position selected by the player.
-     * @throws Exception specific exceptions depending on the tool (e.g., BoxAlreadyFixedException).
+     * @param targetLetter The letter intended to be stamped (if the tool is a stamp). 
+     * Non-stamp tools can ignore this parameter.
+     * @throws Exception specific exceptions depending on the tool.
      */
-    void use(BoxGrid grid, Position pos) throws Exception;
+    void use(BoxGrid grid, Position pos, char targetLetter) throws Exception;
 }

@@ -13,9 +13,10 @@ public class BoxFixer extends SpecialTool {
     }
 
     @Override
-    public void use(BoxGrid grid, Position pos) throws BoxAlreadyFixedException {
+    public void use(BoxGrid grid, Position pos, char targetLetter) throws BoxAlreadyFixedException {
+        // targetLetter is ignored for BoxFixer
+        
         Box currentBox = grid.getBox(pos);
-
         if (currentBox == null) return;
 
         // If it is already a FixedBox, we cannot fix it again.
@@ -24,7 +25,6 @@ public class BoxFixer extends SpecialTool {
         }
 
         // Create a new FixedBox using the surfaces of the current box.
-        // FixedBox constructor takes char[] surfaces.
         FixedBox newFixedBox = new FixedBox(currentBox.getSurfacesCopy());
 
         // Replace the box in the grid

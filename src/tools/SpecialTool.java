@@ -25,5 +25,7 @@ public abstract class SpecialTool implements ITool {
         return name;
     }
     
-    // The 'use' method is left abstract for specific tool implementations.
+    
+    @Override
+    public abstract void use(BoxGrid grid, Position pos, char targetLetter) throws Exception;
 }

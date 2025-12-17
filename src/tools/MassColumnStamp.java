@@ -11,11 +11,7 @@ public class MassColumnStamp extends SpecialTool {
     }
 
     @Override
-    public void use(BoxGrid grid, Position pos) {
-        Box sourceBox = grid.getBox(pos);
-        if (sourceBox == null) return;
-
-        char letterToStamp = sourceBox.getTopLetter();
+    public void use(BoxGrid grid, Position pos, char targetLetter) {
         int col = pos.getCol();
 
         // Iterate through all rows in this column
@@ -24,10 +20,11 @@ public class MassColumnStamp extends SpecialTool {
             Box target = grid.getBox(targetPos);
 
             if (target != null) {
-                target.stampTop(letterToStamp);
+                // Stamp with the target letter
+                target.stampTop(targetLetter);
             }
         }
 
-        System.out.println("Mass Column Stamp applied to Column " + col);
+        System.out.println("Mass Column Stamp applied to Column " + col + " with '" + targetLetter + "'");
     }
 }
